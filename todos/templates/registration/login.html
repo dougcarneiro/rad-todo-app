@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+<!-- Language chip selector — top right -->
+{% get_current_language as LANGUAGE_CODE %}
+{% get_available_languages as LANGUAGES %}
+<div class="fixed top-4 right-4 flex gap-1 z-50">
+    {% for lang_code, lang_name in LANGUAGES %}
+    <form action="{% url 'set_language' %}" method="post" class="inline">
+        {% csrf_token %}
+        <input name="next" type="hidden" value="{{ request.path }}">
+        <input name="language" type="hidden" value="{{ lang_code }}">
+        <button type="submit"
+            class="px-3 py-1 rounded text-xs font-bold tracking-widest border transition-colors cursor-pointer
+                   {% if lang_code == LANGUAGE_CODE %}bg-violet-600 text-white border-violet-600{% else %}bg-white text-violet-600 border-violet-300 hover:bg-violet-50{% endif %}">
+            {{ lang_code|upper|slice:":2" }}
+        </button>
+    </form>
+    {% endfor %}
+</div>
+
+<div class="flex min-h-full flex-col justify-center px-6 py-8 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-sm text-center">
+        <h1 class="text-6xl font-satisfy text-violet-800 mb-4">{% trans "Meus Afazeres" %}</h1>
+        <p class="text-lg text-violet-600 font-montserrat">{% trans "A melhor forma de organizar suas tarefas" %}</p>
+    </div>
+
+    <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
+        <div class="bg-violet-100 shadow-md rounded-lg p-6">
+            {% if form.non_field_errors %}
+            <div class="bg-red-50 text-red-600 p-3 rounded-md mb-4 text-sm font-medium border border-red-200 text-left">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                {% for field in form %}
+                <div>
+                    <label class="block text-sm font-medium text-indigo-800 mb-1" for="{{ field.id_for_label }}">
+                        {{ field.label }}{% if field.field.required %}<span class="ml-0.5 text-red-600" aria-hidden="true">*</span>{% endif %}
+                    </label>
+                    {{ field }}
+                    {% if field.errors %}
+                    <p class="mt-1 text-xs text-red-600">{{ field.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-md py-2 transition-colors">
+                        {% trans "Entrar" %}
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <p class="mt-10 text-center text-sm text-gray-600">
+            {% trans "Não possui cadastro?" %}
+            <a href="{% url 'signup' %}" class="font-semibold text-indigo-600 hover:text-indigo-500">{% trans "Crie uma conta agora!" %}</a>
+        </p>
+    </div>
+</div>{% endblock %}

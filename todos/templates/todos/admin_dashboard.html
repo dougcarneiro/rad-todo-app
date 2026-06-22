@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto mt-4 font-montserrat">
+    <!-- Header with Back Button -->
+    <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-4xl font-satisfy text-violet-800 font-bold mb-1">{% trans "Painel Administrativo" %}</h1>
+            <p class="text-sm text-violet-600 font-medium">{% trans "Monitoramento e Gerenciamento Global do Sistema" %}</p>
+        </div>
+        <a href="{% url 'home' %}" class="flex items-center gap-2 bg-violet-500 hover:bg-violet-600 text-white rounded-lg px-4 py-2 shadow transition cursor-pointer">
+            <span class="material-icons text-sm">arrow_back</span>
+            <span class="font-medium text-sm">{% trans "Voltar ao Início" %}</span>
+        </a>
+    </div>
+
+    <!-- Statistics Grid -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <!-- Users Card -->
+        <div class="bg-white p-5 rounded-lg shadow-sm border border-violet-100 flex items-center gap-4">
+            <div class="bg-violet-100 text-violet-800 p-3 rounded-full flex items-center justify-center">
+                <span class="material-icons text-2xl">people</span>
+            </div>
+            <div>
+                <span class="block text-xs font-semibold text-gray-400 uppercase">{% trans "Usuários" %}</span>
+                <span class="text-2xl font-bold text-gray-800">{{ total_users }}</span>
+                <span class="block text-xxs text-emerald-600 font-semibold mt-0.5" title="{% trans 'Usuários ativos nos últimos 7 dias' %}">
+                    {{ active_users_count }} {% trans "ativos na última semana" %}
+                </span>
+            </div>
+        </div>
+
+        <!-- Total Todos Card -->
+        <div class="bg-white p-5 rounded-lg shadow-sm border border-violet-100 flex items-center gap-4">
+            <div class="bg-violet-100 text-violet-800 p-3 rounded-full flex items-center justify-center">
+                <span class="material-icons text-2xl">task</span>
+            </div>
+            <div>
+                <span class="block text-xs font-semibold text-gray-400 uppercase">{% trans "Tarefas Totais" %}</span>
+                <span class="text-2xl font-bold text-gray-800">{{ total_todos }}</span>
+            </div>
+        </div>
+
+        <!-- Concluded Card -->
+        <div class="bg-emerald-50 p-5 rounded-lg shadow-sm border border-emerald-100 flex items-center gap-4">
+            <div class="bg-emerald-100 text-emerald-800 p-3 rounded-full flex items-center justify-center">
+                <span class="material-icons text-2xl">task_alt</span>
+            </div>
+            <div>
+                <span class="block text-xs font-semibold text-emerald-600 uppercase">{% trans "Concluídas" %}</span>
+                <span class="text-2xl font-bold text-emerald-800">{{ total_done }}</span>
+            </div>
+        </div>
+
+        <!-- Pending Card -->
+        <div class="bg-amber-50 p-5 rounded-lg shadow-sm border border-amber-100 flex items-center gap-4">
+            <div class="bg-amber-100 text-amber-800 p-3 rounded-full flex items-center justify-center">
+                <span class="material-icons text-2xl">pending_actions</span>
+            </div>
+            <div>
+                <span class="block text-xs font-semibold text-amber-600 uppercase">{% trans "Pendentes" %}</span>
+                <span class="text-2xl font-bold text-amber-800">{{ total_pending }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Priorities Distribution -->
+    <div class="bg-white p-6 rounded-lg shadow-sm border border-violet-100 mb-8">
+        <h3 class="text-lg font-bold text-violet-800 mb-4">{% trans "Distribuição por Prioridade" %}</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <!-- Alta -->
+            <div class="bg-red-50 border border-red-100 p-4 rounded-md text-center">
+                <span class="block text-sm font-semibold text-red-600 mb-1">{% trans "Alta" %}</span>
+                <span class="text-xl font-bold text-red-800">{{ high_priority }}</span>
+            </div>
+            <!-- Média -->
+            <div class="bg-orange-50 border border-orange-100 p-4 rounded-md text-center">
+                <span class="block text-sm font-semibold text-orange-600 mb-1">{% trans "Média" %}</span>
+                <span class="text-xl font-bold text-orange-800">{{ medium_priority }}</span>
+            </div>
+            <!-- Leve -->
+            <div class="bg-yellow-50 border border-yellow-100 p-4 rounded-md text-center">
+                <span class="block text-sm font-semibold text-yellow-600 mb-1">{% trans "Leve" %}</span>
+                <span class="text-xl font-bold text-yellow-800">{{ low_priority }}</span>
+            </div>
+            <!-- Normal -->
+            <div class="bg-slate-50 border border-slate-100 p-4 rounded-md text-center">
+                <span class="block text-sm font-semibold text-slate-600 mb-1">{% trans "Normal" %}</span>
+                <span class="text-xl font-bold text-slate-800">{{ normal_priority }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Todo List Table -->
+    <div class="bg-white rounded-lg shadow-sm border border-violet-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-violet-100 bg-violet-50/50">
+            <h3 class="text-lg font-bold text-violet-800">{% trans "Lista Global de Afazeres" %}</h3>
+            <p class="text-xs text-gray-500">{% trans "Exibindo todos os afazeres no banco de dados." %}</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-violet-100/50 text-violet-900 font-semibold uppercase text-xs">
+                        <th class="px-6 py-3 border-b border-violet-100">{% trans "Dono" %}</th>
+                        <th class="px-6 py-3 border-b border-violet-100">{% trans "Título" %}</th>
+                        <th class="px-6 py-3 border-b border-violet-100">{% trans "Status" %}</th>
+                        <th class="px-6 py-3 border-b border-violet-100">{% trans "Prioridade" %}</th>
+                        <th class="px-6 py-3 border-b border-violet-100">{% trans "Data Limite" %}</th>
+                        <th class="px-6 py-3 border-b border-violet-100">{% trans "Criado em" %}</th>
+                        <th class="px-6 py-3 border-b border-violet-100">{% trans "Última Atualização" %}</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-violet-50">
+                    {% for todo in all_todos %}
+                    <tr class="hover:bg-violet-50/20 transition-colors {% if todo.removed %}bg-red-50/10 opacity-75{% endif %}">
+                        <td class="px-6 py-4 font-medium text-gray-500 font-mono tracking-widest">{{ todo.user.username|slice:":2" }}•••••</td>
+                        <td class="px-6 py-4 text-gray-700 font-semibold {% if todo.removed %}line-through text-gray-400{% endif %}">{{ todo.title }}</td>
+                        <td class="px-6 py-4">
+                            {% if todo.removed %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                                {% trans "Removido" %}
+                            </span>
+                            {% elif todo.status == 'DONE' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                {% trans "Feito" %}
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                {% trans "Pendente" %}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if todo.priority == 'HIGH' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">{% trans "Alta" %}</span>
+                            {% elif todo.priority == 'MEDIUM' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">{% trans "Média" %}</span>
+                            {% elif todo.priority == 'LOW' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">{% trans "Leve" %}</span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">{% trans "Normal" %}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-gray-500">{{ todo.due_date|date:"d/m/Y"|default:"-" }}</td>
+                        <td class="px-6 py-4 text-gray-500">{{ todo.created_at|date:"d/m/Y H:i" }}</td>
+                        <td class="px-6 py-4 text-gray-500">{{ todo.updated_at|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                            {% trans "Nenhuma tarefa cadastrada no sistema." %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if all_todos.has_other_pages %}
+        <div class="flex justify-center py-4 border-t border-violet-100 bg-violet-50/20 space-x-2">
+            {% if all_todos.has_previous %}
+                <a href="?page={{ all_todos.previous_page_number }}{% if query %}&u={{ query }}{% endif %}" class="px-3 py-1.5 bg-white border border-violet-200 text-violet-800 rounded-md shadow-sm hover:bg-violet-50 text-xs font-semibold transition">&lsaquo;</a>
+            {% endif %}
+
+            <span class="px-3 py-1.5 bg-violet-500 text-white rounded-md shadow-sm text-xs font-semibold">
+                {{ all_todos.number }} {% trans "de" %} {{ all_todos.paginator.num_pages }}
+            </span>
+
+            {% if all_todos.has_next %}
+                <a href="?page={{ all_todos.next_page_number }}{% if query %}&u={{ query }}{% endif %}" class="px-3 py-1.5 bg-white border border-violet-200 text-violet-800 rounded-md shadow-sm hover:bg-violet-50 text-xs font-semibold transition">&rsaquo;</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal container matching home.html functionality -->
+<div id="todo-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50 hidden transition-opacity duration-300">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 transform transition-transform duration-300 scale-95" id="todo-modal-container">
+        <h2 class="text-3xl font-satisfy text-violet-800 mb-4 text-center" id="todo-modal-title"></h2>
+        <div id="todo-modal-content">
+            <div class="flex justify-center py-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-800"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.TodoTranslations = {
+        errorLoadingForm: "{% trans 'Ocorreu um erro ao carregar o formulário.' %}",
+        close: "{% trans 'Fechar' %}"
+    };
+</script>
+{% endblock %}

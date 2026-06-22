@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block content %}
+<style>
+  .done-task {
+    position: relative;
+  }
+  .done-task::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("{% static 'images/crumpled-paper-texture.jpg' %}");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.35;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0;
+  }
+  @keyframes slideInRight {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out forwards;
+  }
+</style>
+<div class="grid grid-cols-1 md:grid-cols-[1fr_2fr_1fr] items-center w-full gap-4 mb-6 mt-4 relative z-[40]">
+    
+    <!-- Novo Afazer Button (Left) -->
+    <div class="flex justify-center md:justify-start w-full">
+        <button type="button" onclick="openTodoModal('{% url 'create_todo' %}', '{% trans 'Novo Afazer' %}')" class="flex items-center gap-2 bg-violet-500 hover:bg-violet-600 text-white rounded-lg px-4 py-2.5 shadow-sm transition focus:outline-none cursor-pointer w-full md:w-auto justify-center">
+            <span class="material-icons">post_add</span>
+            <span class="font-medium text-sm">{% trans "Novo Afazer" %}</span>
+        </button>
+    </div>
+
+    <!-- Search Form (Center) -->
+    <div class="flex justify-center w-full px-4">
+        <form action="{% url 'home' %}" method="GET" class="flex justify-center items-center space-x-1 w-full max-w-lg lg:max-w-2xl" id="search-filter-form">
+            <!-- Toggle Button for Filters Dropdown -->
+            <div class="relative">
+                <button type="button" onclick="toggleFilterDropdown()" class="flex-shrink-0 border-0 h-fit py-3 px-4 inline-flex justify-center items-center gap-2 rounded-md font-medium bg-white text-violet-700 shadow-sm align-middle hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-violet-600 transition-all text-sm cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" class="text-violet-600 text-xl" width="1em" height="1em" viewBox="0 0 512 512">
+                        <path fill="currentColor" d="M472 168H40a24 24 0 0 1 0-48h432a24 24 0 0 1 0 48m-80 112H120a24 24 0 0 1 0-48h272a24 24 0 0 1 0 48m-96 112h-80a24 24 0 0 1 0-48h80a24 24 0 0 1 0 48"></path>
+                    </svg>
+                    <span class="hidden lg:block">{% trans "Filtros" %}</span>
+                    <svg class="w-2.5 h-2.5 text-violet-600" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2 5L8.16086 10.6869C8.35239 10.8637 8.64761 10.8637 8.83914 10.6869L15 5" stroke="currentColor" stroke-width="2"></path>
+                    </svg>
+                </button>
+                
+                <!-- Filters Dropdown Panel -->
+                <div id="search-filter-checkbox-dropdown" class="hidden absolute left-0 mt-2 z-50 min-w-[15rem] bg-white shadow-lg rounded-lg p-2 border border-gray-100 transition-all">
+                    <span class="block text-sm text-left m-2 italic font-semibold text-violet-400">{% trans "Por Status" %}</span>
+                    
+                    <!-- Done Checkbox -->
+                    <div class="relative flex items-start py-2 px-3 mx-2 rounded-md hover:bg-gray-100">
+                        <div class="flex items-center h-5 mt-1">
+                            <input id="done-status" name="status" value="DONE" class="border-gray-200 rounded text-violet-600 focus:ring-violet-500" type="checkbox" {% if 'DONE' in status_filters %}checked{% endif %} onchange="submitSearchForm()">
+                        </div>
+                        <label for="done-status" class="ml-3.5 select-none cursor-pointer">
+                            <span class="block text-sm font-semibold text-violet-800">{% trans "Feitos" %}</span>
+                            <span class="block text-xs text-violet-600">{% trans "Afazeres finalizados" %}</span>
+                        </label>
+                    </div>
+                    
+                    <!-- Pending Checkbox -->
+                    <div class="relative flex items-start py-2 px-3 mx-2 rounded-md hover:bg-gray-100">
+                        <div class="flex items-center h-5 mt-1">
+                            <input id="pending-status" name="status" value="PENDING" class="border-gray-200 rounded text-violet-600 focus:ring-violet-500" type="checkbox" {% if 'PENDING' in status_filters %}checked{% endif %} onchange="submitSearchForm()">
+                        </div>
+                        <label for="pending-status" class="ml-3.5 select-none cursor-pointer">
+                            <span class="block text-sm font-semibold text-violet-800">{% trans "Não Feitos" %}</span>
+                            <span class="block text-xs text-violet-600">{% trans "Afazeres pendentes" %}</span>
+                        </label>
+                    </div>
+                    
+                    <span class="block text-sm text-left mt-4 m-2 italic font-semibold text-violet-400">{% trans "Por Prioridade" %}</span>
+                    
+                    <!-- High Checkbox -->
+                    <div class="relative flex items-start py-2 px-3 mx-2 rounded-md hover:bg-gray-100">
+                        <div class="flex items-center h-5 mt-1">
+                            <input id="high-priority" name="priority" value="HIGH" class="border-gray-200 rounded text-violet-600 focus:ring-violet-500" type="checkbox" {% if 'HIGH' in priority_filters %}checked{% endif %} onchange="submitSearchForm()">
+                        </div>
+                        <label for="high-priority" class="ml-3.5 select-none cursor-pointer">
+                            <span class="block text-sm font-semibold text-violet-800">{% trans "Prioridade Alta" %}</span>
+                            <span class="block text-xs text-violet-600">{% trans "Afazeres de alta prioridade" %}</span>
+                        </label>
+                    </div>
+                    
+                    <!-- Medium Checkbox -->
+                    <div class="relative flex items-start py-2 px-3 mx-2 rounded-md hover:bg-gray-100">
+                        <div class="flex items-center h-5 mt-1">
+                            <input id="medium-priority" name="priority" value="MEDIUM" class="border-gray-200 rounded text-violet-600 focus:ring-violet-500" type="checkbox" {% if 'MEDIUM' in priority_filters %}checked{% endif %} onchange="submitSearchForm()">
+                        </div>
+                        <label for="medium-priority" class="ml-3.5 select-none cursor-pointer">
+                            <span class="block text-sm font-semibold text-violet-800">{% trans "Prioridade Média" %}</span>
+                            <span class="block text-xs text-violet-600">{% trans "Afazeres de média prioridade" %}</span>
+                        </label>
+                    </div>
+                    
+                    <!-- Normal Checkbox -->
+                    <div class="relative flex items-start py-2 px-3 mx-2 rounded-md hover:bg-gray-100">
+                        <div class="flex items-center h-5 mt-1">
+                            <input id="normal-priority" name="priority" value="NORMAL" class="border-gray-200 rounded text-violet-600 focus:ring-violet-500" type="checkbox" {% if 'NORMAL' in priority_filters %}checked{% endif %} onchange="submitSearchForm()">
+                        </div>
+                        <label for="normal-priority" class="ml-3.5 select-none cursor-pointer">
+                            <span class="block text-sm font-semibold text-violet-800">{% trans "Prioridade Normal" %}</span>
+                            <span class="block text-xs text-violet-600">{% trans "Afazeres de prioridade normal" %}</span>
+                        </label>
+                    </div>
+                    
+                    <!-- Low Checkbox -->
+                    <div class="relative flex items-start py-2 px-3 mx-2 rounded-md hover:bg-gray-100">
+                        <div class="flex items-center h-5 mt-1">
+                            <input id="low-priority" name="priority" value="LOW" class="border-gray-200 rounded text-violet-600 focus:ring-violet-500" type="checkbox" {% if 'LOW' in priority_filters %}checked{% endif %} onchange="submitSearchForm()">
+                        </div>
+                        <label for="low-priority" class="ml-3.5 select-none cursor-pointer">
+                            <span class="block text-sm font-semibold text-violet-800">{% trans "Prioridade Baixa" %}</span>
+                            <span class="block text-xs text-violet-600">{% trans "Afazeres de baixa prioridade" %}</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Search Text Input -->
+            <div class="flex-grow flex-1 min-w-0 ml-4">
+                <input type="text" name="q" value="{{ query|default:'' }}" class="bg-white text-violet-600 rounded-lg w-full h-fit py-3 px-4 outline-violet-600 hover:outline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-violet-600 transition-all text-sm" placeholder="{% trans 'Busque por um afazer...' %}">
+            </div>
+            
+            <!-- Submit Button -->
+            <button type="submit" class="flex-shrink-0 bg-violet-500 hover:bg-violet-600 rounded-full w-9 h-9 ml-4 cursor-pointer outline-violet-600 hover:outline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-violet-600 transition-all text-white flex items-center justify-center">
+                <span class="material-icons">search</span>
+            </button>
+        </form>
+    </div>
+
+    <!-- Meu Perfil Button (Right) -->
+    <div class="flex justify-center md:justify-end w-full">
+        <button type="button" onclick="toggleProfileDrawer()" class="flex items-center gap-2 bg-violet-500 hover:bg-violet-600 text-white rounded-lg px-4 py-2.5 shadow-sm transition focus:outline-none cursor-pointer w-full md:w-auto justify-center">
+            <span class="material-icons">account_circle</span>
+            <span class="font-medium text-sm">{% trans "Meu Perfil" %}</span>
+        </button>
+    </div>
+
+</div>
+
+<!-- Logo block matching logo.component.html -->
+<div class="flex justify-center flex-col items-center pt-8 pb-4 relative z-[10]">
+    <div class="mt-8 text-center">
+        <h1 class="text-center text-6xl md:text-8xl font-medium italic tracking-tight text-violet-800 font-satisfy">{% trans "Meus Afazeres" %}</h1>
+        <h2 class="text-center text-xl md:text-3xl font-light italic tracking-tight text-violet-600 font-satisfy mt-4">{% trans "A melhor forma de organizar suas tarefas" %}</h2>
+    </div>
+</div>
+
+{% if todos %}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+    {% for todo in todos %}
+    <div class="{% if todo.priority == 'HIGH' %}bg-red-200{% elif todo.priority == 'MEDIUM' %}bg-orange-200{% elif todo.priority == 'LOW' %}bg-yellow-100{% else %}bg-white{% endif %} {% if todo.status == 'DONE' %}done-task opacity-75{% endif %} shadow-md rounded-lg p-4 relative flex flex-col w-full h-[26rem] font-montserrat transition-all">
+        
+        <div class="flex justify-end items-center space-x-2.5 mb-3">
+            <span class="text-md font-medium text-violet-900">{% trans "Feito" %}</span>
+            <form action="{% url 'toggle_todo' todo.pk %}" method="POST" class="m-0 p-0 h-6">
+                {% csrf_token %}
+                <button type="submit" class="w-11 h-6 rounded-full flex items-center transition duration-300 focus:outline-none shadow-inner {% if todo.status == 'DONE' %}bg-violet-500 justify-end{% else %}bg-gray-300 justify-start{% endif %}">
+                    <span class="w-5 h-5 rounded-full bg-white shadow-md mx-0.5 transform transition duration-300"></span>
+                </button>
+            </form>
+        </div>
+        
+        <div>
+            <h3 class="text-lg font-semibold text-gray-700 {% if todo.status == 'DONE' %}line-through text-gray-500{% endif %}">
+                {{ todo.title }}
+            </h3>
+            <div class="mt-4">
+                <p class="text-justify text-lg text-gray-600 {% if todo.status == 'DONE' %}line-through text-gray-400{% endif %}">
+                    {{ todo.description|default:"" }}
+                </p>
+                
+                <div class="absolute bottom-4 left-4">
+                    {% if todo.due_date %}
+                    <p class="text-sm text-gray-500">
+                        <span class="font-bold">{% trans "Data do Afazer:" %} </span>
+                        <span>{{ todo.due_date|date:"M d, Y" }}</span>
+                    </p>
+                    {% endif %}
+                    <p class="mt-1 text-sm text-gray-500">
+                        <span class="font-bold">{% trans "Criado em:" %} </span>
+                        <span>{{ todo.created_at|date:"M d, Y" }}</span>
+                    </p>
+                </div>
+            </div>
+            
+            <div class="absolute bottom-4 right-4 flex space-x-2">
+                <button type="button" onclick="openTodoModal('{% url 'edit_todo' todo.pk %}', '{% trans 'Atualizar Afazer' %}')" class="text-gray-600 hover:text-gray-800 transition focus:outline-none cursor-pointer">
+                    <span class="material-icons">edit</span>
+                </button>
+                <button type="button" onclick="openTodoModal('{% url 'delete_todo' todo.pk %}', '{% trans 'Remover Afazer' %}')" class="text-gray-600 hover:text-gray-800 transition focus:outline-none cursor-pointer">
+                    <span class="material-icons">delete</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if todos.has_other_pages %}
+<div class="flex justify-center mt-10 space-x-2">
+    {% if todos.has_previous %}
+        <a href="?page={{ todos.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% for s in status_filters %}&status={{ s }}{% endfor %}{% for p in priority_filters %}&priority={{ p }}{% endfor %}" class="px-4 py-2 bg-white text-violet-800 rounded-md shadow-sm hover:bg-violet-50">&lsaquo;</a>
+    {% endif %}
+
+    <span class="px-4 py-2 bg-violet-500 text-white rounded-md shadow-sm">
+        {{ todos.number }} {% trans "de" %} {{ todos.paginator.num_pages }}
+    </span>
+
+    {% if todos.has_next %}
+        <a href="?page={{ todos.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% for s in status_filters %}&status={{ s }}{% endfor %}{% for p in priority_filters %}&priority={{ p }}{% endfor %}" class="px-4 py-2 bg-white text-violet-800 rounded-md shadow-sm hover:bg-violet-50">&rsaquo;</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="flex flex-col items-center justify-center mt-20 text-violet-800">
+    {% if query or status_filters or priority_filters %}
+        <span class="material-icons text-6xl mb-4 opacity-55">search_off</span>
+        <h2 class="text-2xl font-montserrat text-center">
+            {% trans "Nenhum afazer encontrado." %}
+        </h2>
+    {% else %}
+        <span class="material-icons text-6xl mb-4 opacity-55">inbox</span>
+        <h2 class="text-2xl font-montserrat text-center">
+            {% trans "Eita, você ainda não criou um afazer :(" %}
+        </h2>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Modal for Create/Edit Todo -->
+<div id="todo-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50 hidden transition-opacity duration-300">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 transform transition-transform duration-300 scale-95" id="todo-modal-container">
+        <h2 class="text-3xl font-satisfy text-violet-800 mb-4 text-center" id="todo-modal-title"></h2>
+        <div id="todo-modal-content">
+            <!-- Form will be injected here via AJAX -->
+            <div class="flex justify-center py-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-800"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Profile Drawer Container (Overlay) -->
+<div id="profile-drawer" class="fixed inset-0 z-[100] flex justify-end bg-black bg-opacity-40 hidden transition-opacity">
+    <div class="bg-white shadow-2xl w-full sm:w-96 h-full p-6 relative flex flex-col animate-slide-in-right overflow-y-auto">
+        <button type="button" onclick="toggleProfileDrawer()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer">
+            <span class="material-icons">close</span>
+        </button>
+        
+        <div class="mb-6">
+            <h2 class="text-3xl font-satisfy text-violet-800 mb-2">{% trans "Meu Perfil" %}</h2>
+            <h4 class="text-lg font-medium text-violet-600">{% trans "Perfil de" %} {{ user.username }}</h4>
+            <p class="text-sm text-gray-500">{% trans "Apenas algumas informações sobre você." %}</p>
+        </div>
+        
+        <div class="space-y-3 mb-6">
+            <div class="flex justify-between border-b border-gray-100 pb-2">
+                <span class="text-violet-600 font-medium">{% trans "Nome" %}</span>
+                <span class="text-gray-800">{{ user.get_full_name|default:user.username }}</span>
+            </div>
+            <div class="flex justify-between border-b border-gray-100 pb-2">
+                <span class="text-violet-600 font-medium">{% trans "Email" %}</span>
+                <span class="text-gray-800">{{ user.email|default:"-" }}</span>
+            </div>
+            <div class="flex justify-between border-b border-gray-100 pb-2">
+                <span class="text-violet-600 font-medium">{% trans "Total de Afazeres criados:" %}</span>
+                <span class="text-gray-800">{{ total_created }}</span>
+            </div>
+            <div class="flex justify-between border-b border-gray-100 pb-2">
+                <span class="text-violet-600 font-medium">{% trans "Total de Afazeres completos:" %}</span>
+                <span class="text-gray-800">{{ total_done }}</span>
+            </div>
+            <div class="flex justify-between border-b border-gray-100 pb-2">
+                <span class="text-violet-600 font-medium">{% trans "Total de Afazeres pendentes:" %}</span>
+                <span class="text-gray-800">{{ total_pending }}</span>
+            </div>
+            <div class="flex justify-between border-b border-gray-100 pb-2">
+                <span class="text-violet-600 font-medium">{% trans "Membro desde:" %}</span>
+                <span class="text-gray-800">{{ user.date_joined|date:"d/m/Y" }}</span>
+            </div>
+        </div>
+        
+        {% if request.user.is_staff %}
+        <!-- Admin Link -->
+        <div class="mb-6">
+            <a href="{% url 'admin_dashboard' %}" class="w-full bg-violet-100 hover:bg-violet-200 text-violet-800 font-semibold rounded-md py-2.5 shadow-sm transition flex justify-center items-center gap-2 cursor-pointer text-sm">
+                <span class="material-icons text-sm">dashboard</span>
+                {% trans "Painel Admin" %}
+            </a>
+        </div>
+        {% endif %}
+        
+        <!-- Language Chip Selector -->
+        <div class="mb-6">
+            <span class="block text-sm font-medium text-violet-600 mb-2">{% trans "Idioma" %}</span>
+            <div class="flex gap-1">
+                {% get_current_language as LANGUAGE_CODE %}
+                {% get_available_languages as LANGUAGES %}
+                {% for lang_code, lang_name in LANGUAGES %}
+                <form action="{% url 'set_language' %}" method="post" class="inline">
+                    {% csrf_token %}
+                    <input name="next" type="hidden" value="{{ request.path }}?profile=1">
+                    <input name="language" type="hidden" value="{{ lang_code }}">
+                    <button type="submit"
+                        class="px-3 py-1 rounded text-xs font-bold tracking-widest border transition-colors cursor-pointer
+                               {% if lang_code == LANGUAGE_CODE %}bg-violet-600 text-white border-violet-600{% else %}bg-white text-violet-600 border-violet-300 hover:bg-violet-50{% endif %}">
+                        {{ lang_code|upper|slice:":2" }}
+                    </button>
+                </form>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Bottom Controls (Logout Button Only) -->
+        <div class="mt-auto pt-6 border-t border-gray-100">
+            <!-- Logout Form -->
+            <form action="{% url 'logout' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="w-full bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-md py-2.5 transition-colors flex justify-center items-center gap-2 cursor-pointer">
+                    <span class="material-icons text-sm">logout</span>
+                    {% trans "Sair" %}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.TodoTranslations = {
+        errorLoadingForm: "{% trans 'Ocorreu um erro ao carregar o formulário.' %}",
+        close: "{% trans 'Fechar' %}"
+    };
+</script>
+{% endblock %}
