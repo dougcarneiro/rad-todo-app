@@ -57,7 +57,7 @@ O projeto atende a todos os Requisitos Funcionais especificados na definição:
     *   Paginação dinâmica limitada a 25 itens por página na listagem principal.
 7.  **Internacionalização (i18n)**:
     *   Suporte completo a três idiomas: **Português (pt-br)**, **Inglês (en)** e **Espanhol (es)**.
-    *   O seletor de idiomas fica acessível no menu lateral (drawer) de perfil. O estado do menu persiste aberto mesmo após o recarregamento decorrente da alteração de idioma.
+    *   O seletor de idiomas é exibido como botões chip (**PT | EN | ES**) fixados no canto superior direito de todas as telas (login, cadastro e página principal), com o idioma ativo destacado.
 8.  **API REST integrada**:
     *   Exposição de endpoints para gerenciamento de afazeres e usuários por meio de REST API utilizando o Django REST Framework (DRF).
 
