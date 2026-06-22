@@ -201,18 +201,7 @@ def admin_dashboard(request):
         if item['priority'] in priority_dict:
             priority_dict[item['priority']] = item['total']
 
-    # Filtro por usuário (nome, email ou username) e inclui removidos
-    query = request.GET.get('u', '')
     all_todos = Todo.objects.all().order_by('-created_at')
-    
-    if query:
-        all_todos = all_todos.filter(
-            Q(user__first_name__icontains=query) |
-            Q(user__last_name__icontains=query) |
-            Q(user__email__icontains=query) |
-            Q(user__username__icontains=query)
-        )
-        
     paginator = Paginator(all_todos, 25)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -227,7 +216,6 @@ def admin_dashboard(request):
         'medium_priority': priority_dict['MEDIUM'],
         'low_priority': priority_dict['LOW'],
         'normal_priority': priority_dict['NORMAL'],
-        'all_todos': page_obj,
-        'query': query
+        'all_todos': page_obj
     }
     return render(request, 'todos/admin_dashboard.html', context)
