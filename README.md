@@ -77,14 +77,14 @@ A aplicação implementa controle de acesso baseado em papéis usando a flag `is
 ### Proteção das Views
 
 *   **Views de usuário comum**: decoradas com `@login_required`. Todas as queries filtram `user=request.user`, impedindo acesso aos dados de outro usuário mesmo conhecendo o UUID da tarefa.
-*   **Views administrativas**: decoradas com `@staff_member_required`, que redireciona para o login caso o usuário não tenha a flag `is_staff`.
+*   **Views administrativas**: decoradas com `@staff_required`, que redireciona para o login caso o usuário não tenha a flag `is_staff`.
 *   **Feedback de credenciais inválidas**: a tela de login exibe uma mensagem de erro clara quando as credenciais não correspondem a nenhuma conta.
 
 ---
 
 ## 🖥️ Painel Administrativo
 
-Acessível em `/admin-dashboard/` (apenas para `is_staff=True`), o painel oferece uma visão consolidada do sistema sem expor dados pessoais sensíveis.
+Acessível em `/dashboard/` (apenas para `is_staff=True`), o painel oferece uma visão consolidada do sistema sem expor dados pessoais sensíveis.
 
 ### Funcionalidades do Painel
 
