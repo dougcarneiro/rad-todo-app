@@ -10,9 +10,36 @@ function styleFormFields(container = document) {
     });
 }
 
+// Function to initialize clear date button functionality
+function initDateClearButton(container = document) {
+    const dateInput = container.querySelector('input[type="date"]');
+    const clearDateBtn = container.querySelector('#clear-date-btn');
+    if (dateInput && clearDateBtn) {
+        const toggleClearBtn = () => {
+            if (dateInput.value) {
+                clearDateBtn.classList.remove('hidden');
+            } else {
+                clearDateBtn.classList.add('hidden');
+            }
+        };
+        
+        dateInput.addEventListener('input', toggleClearBtn);
+        dateInput.addEventListener('change', toggleClearBtn);
+        
+        // Check initial state
+        toggleClearBtn();
+        
+        clearDateBtn.addEventListener('click', () => {
+            dateInput.value = '';
+            toggleClearBtn();
+        });
+    }
+}
+
 // Automatically style static form fields on page load
 document.addEventListener('DOMContentLoaded', () => {
     styleFormFields();
+    initDateClearButton();
 });
 
 // Modal Controller functions
@@ -48,6 +75,7 @@ function openTodoModal(url, titleText) {
                 content.innerHTML = html;
                 // Style newly injected fields
                 styleFormFields(content);
+                initDateClearButton(content);
             }
         })
         .catch(error => {
@@ -110,15 +138,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 .then(result => {
                     if (result.isJson && result.data.success) {
-                        window.location.href = result.data.redirect || '/';
+                        closeTodoModal();
+                        // Use HTMX to refresh the list and trigger Out-Of-Band stats updates automatically
+                        htmx.ajax('GET', window.location.pathname + window.location.search, {
+                            target: '#todo-list-container',
+                            swap: 'innerHTML'
+                        });
                     } else {
                         content.innerHTML = result.text;
                         styleFormFields(content);
+                        initDateClearButton(content);
                     }
                 })
                 .catch(err => {
                     console.error('Error submitting form:', err);
                 });
+            }
+        });
+    }
+
+    // Search input clear button logic
+    const searchInput = document.getElementById('search-input');
+    const clearBtn = document.getElementById('clear-search-btn');
+    if (searchInput && clearBtn) {
+        searchInput.addEventListener('input', () => {
+            if (searchInput.value.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearBtn.classList.add('hidden');
+            searchInput.focus();
+            
+            const form = document.getElementById('search-filter-form');
+            if (form) {
+                htmx.trigger(form, 'submit');
             }
         });
     }
@@ -132,11 +190,11 @@ function toggleFilterDropdown() {
     }
 }
 
-// Automatically submit the form on checkbox changes
+// Automatically submit the form on checkbox changes (via HTMX trigger)
 function submitSearchForm() {
     const form = document.getElementById('search-filter-form');
     if (form) {
-        form.submit();
+        htmx.trigger(form, 'submit');
     }
 }
 
@@ -170,11 +228,14 @@ window.addEventListener('click', function(event) {
     }
 });
 
-// Automatically open profile drawer if '?profile=1' is in query string
-document.addEventListener('DOMContentLoaded', () => {
+// Automatically open profile drawer if '?profile=1' is in query string (supports static load and HTMX swaps)
+document.addEventListener('htmx:load', () => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('profile')) {
-        toggleProfileDrawer();
+        const drawer = document.getElementById('profile-drawer');
+        if (drawer && drawer.classList.contains('hidden')) {
+            toggleProfileDrawer();
+        }
         // Clean up URL without reloading
         const cleanUrl = window.location.pathname + window.location.hash;
         window.history.replaceState({}, document.title, cleanUrl);

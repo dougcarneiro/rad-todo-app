@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login as auth_login, authenticate
 from .decorators import staff_required
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
 from django.conf import settings
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
@@ -81,6 +82,37 @@ def list_todos(request):
     total_done = Todo.objects.filter(user=request.user, status=Todo.Status.DONE).count()
     total_pending = Todo.objects.filter(user=request.user, status=Todo.Status.PENDING, removed=False).count()
 
+    is_htmx = request.headers.get('HX-Request') == 'true'
+    is_partial = is_htmx and request.headers.get('HX-Target') == 'todo-list-container'
+    if is_partial:
+        return render(request, 'todos/todo_list_partial.html', {
+            'todos': todos,
+            'query': query,
+            'status_filters': status_filters,
+            'priority_filters': priority_filters,
+            'total_created': total_created,
+            'total_done': total_done,
+            'total_pending': total_pending
+        })
+
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax') == '1'
+    if is_ajax:
+        from django.template.loader import render_to_string
+        html = render_to_string('todos/todo_list_partial.html', {
+            'todos': todos,
+            'query': query,
+            'status_filters': status_filters,
+            'priority_filters': priority_filters,
+        }, request=request)
+        return JsonResponse({
+            'html': html,
+            'total_created': total_created,
+            'total_done': total_done,
+            'total_pending': total_pending
+        })
+
+    show_profile = request.GET.get('profile') == '1'
+
     return render(request, 'todos/home.html', {
         'todos': todos,
         'query': query,
@@ -88,7 +120,8 @@ def list_todos(request):
         'priority_filters': priority_filters,
         'total_created': total_created,
         'total_done': total_done,
-        'total_pending': total_pending
+        'total_pending': total_pending,
+        'show_profile': show_profile
     })
 
 @login_required
@@ -109,7 +142,7 @@ def create_todo(request):
         return render(request, 'todos/todo_form_partial.html', {'form': form})
     return render(request, 'todos/todo_form.html', {'form': form, 'title': _('New Todo')})
 
-from django.http import JsonResponse
+
 
 @login_required
 def edit_todo(request, pk):
@@ -145,12 +178,18 @@ def delete_todo(request, pk):
 @login_required
 def toggle_todo(request, pk):
     todo = get_object_or_404(Todo, pk=pk, user=request.user)
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.GET.get('ajax') == '1'
+    is_htmx = request.headers.get('HX-Request') == 'true'
     if request.method == 'POST':
         if todo.status == Todo.Status.DONE:
             todo.status = Todo.Status.PENDING
         else:
             todo.status = Todo.Status.DONE
         todo.save()
+        if is_htmx:
+            return redirect('home')
+        if is_ajax:
+            return JsonResponse({'success': True})
     return redirect('home')
 
 @login_required

@@ -6,7 +6,8 @@ class TodoForm(forms.ModelForm):
         model = Todo
         fields = ['title', 'description', 'priority', 'due_date']
         widgets = {
-            'due_date': forms.DateInput(attrs={'type': 'date'}),
+            'description': forms.Textarea(attrs={'rows': 3}),
+            'due_date': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
         }
 
     def __init__(self, *args, **kwargs):

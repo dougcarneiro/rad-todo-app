@@ -3,23 +3,7 @@
 {% load static %}
 
 {% block content %}
-<!-- Language chip selector — top right -->
-{% get_current_language as LANGUAGE_CODE %}
-{% get_available_languages as LANGUAGES %}
-<div class="fixed top-4 right-4 flex gap-1 z-50">
-    {% for lang_code, lang_name in LANGUAGES %}
-    <form action="{% url 'set_language' %}" method="post" class="inline">
-        {% csrf_token %}
-        <input name="next" type="hidden" value="{{ request.path }}">
-        <input name="language" type="hidden" value="{{ lang_code }}">
-        <button type="submit"
-            class="px-3 py-1 rounded text-xs font-bold tracking-widest border transition-colors cursor-pointer
-                   {% if lang_code == LANGUAGE_CODE %}bg-violet-600 text-white border-violet-600{% else %}bg-white text-violet-600 border-violet-300 hover:bg-violet-50{% endif %}">
-            {{ lang_code|upper|slice:":2" }}
-        </button>
-    </form>
-    {% endfor %}
-</div>
+
 <style>
   .done-task {
     position: relative;
@@ -60,7 +44,12 @@
 
     <!-- Search Form (Center) -->
     <div class="flex justify-center w-full px-4">
-        <form action="{% url 'home' %}" method="GET" class="flex justify-center items-center space-x-1 w-full max-w-lg lg:max-w-2xl" id="search-filter-form">
+        <form action="{% url 'home' %}" method="GET" class="flex justify-center items-center space-x-1 w-full max-w-lg lg:max-w-2xl" id="search-filter-form"
+              hx-get="{% url 'home' %}"
+              hx-target="#todo-list-container"
+              hx-swap="innerHTML"
+              hx-push-url="true"
+              hx-trigger="submit, keyup delay:300ms changed from:input[name='q']">
             <!-- Toggle Button for Filters Dropdown -->
             <div class="relative">
                 <button type="button" onclick="toggleFilterDropdown()" class="flex-shrink-0 border-0 h-fit py-3 px-4 inline-flex justify-center items-center gap-2 rounded-md font-medium bg-white text-violet-700 shadow-sm align-middle hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-violet-600 transition-all text-sm cursor-pointer">
@@ -148,8 +137,12 @@
             </div>
             
             <!-- Search Text Input -->
-            <div class="flex-grow flex-1 min-w-0 ml-4">
-                <input type="text" name="q" value="{{ query|default:'' }}" class="bg-white text-violet-600 rounded-lg w-full h-fit py-3 px-4 outline-violet-600 hover:outline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-violet-600 transition-all text-sm" placeholder="{% trans 'Busque por um afazer...' %}">
+            <div class="flex-grow flex-1 min-w-0 ml-4 relative">
+                <input type="text" name="q" id="search-input" value="{{ query|default:'' }}" class="bg-white text-violet-600 rounded-lg w-full h-fit py-3 pl-4 pr-10 outline-violet-600 hover:outline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-violet-600 transition-all text-sm" placeholder="{% trans 'Busque por um afazer...' %}">
+                <!-- Clear Button 'x' -->
+                <button type="button" id="clear-search-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-violet-400 hover:text-violet-600 transition focus:outline-none {% if not query %}hidden{% endif %}">
+                    <span class="material-icons text-lg">close</span>
+                </button>
             </div>
             
             <!-- Submit Button -->
@@ -177,88 +170,9 @@
     </div>
 </div>
 
-{% if todos %}
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-    {% for todo in todos %}
-    <div class="{% if todo.priority == 'HIGH' %}bg-red-200{% elif todo.priority == 'MEDIUM' %}bg-orange-200{% elif todo.priority == 'LOW' %}bg-yellow-100{% else %}bg-white{% endif %} {% if todo.status == 'DONE' %}done-task opacity-75{% endif %} shadow-md rounded-lg p-4 relative flex flex-col w-full h-[26rem] font-montserrat transition-all">
-        
-        <div class="flex justify-end items-center space-x-2.5 mb-3">
-            <span class="text-md font-medium text-violet-900">{% trans "Feito" %}</span>
-            <form action="{% url 'toggle_todo' todo.pk %}" method="POST" class="m-0 p-0 h-6">
-                {% csrf_token %}
-                <button type="submit" class="w-11 h-6 rounded-full flex items-center transition duration-300 focus:outline-none shadow-inner {% if todo.status == 'DONE' %}bg-violet-500 justify-end{% else %}bg-gray-300 justify-start{% endif %}">
-                    <span class="w-5 h-5 rounded-full bg-white shadow-md mx-0.5 transform transition duration-300"></span>
-                </button>
-            </form>
-        </div>
-        
-        <div>
-            <h3 class="text-lg font-semibold text-gray-700 {% if todo.status == 'DONE' %}line-through text-gray-500{% endif %}">
-                {{ todo.title }}
-            </h3>
-            <div class="mt-4">
-                <p class="text-justify text-lg text-gray-600 {% if todo.status == 'DONE' %}line-through text-gray-400{% endif %}">
-                    {{ todo.description|default:"" }}
-                </p>
-                
-                <div class="absolute bottom-4 left-4">
-                    {% if todo.due_date %}
-                    <p class="text-sm text-gray-500">
-                        <span class="font-bold">{% trans "Data do Afazer:" %} </span>
-                        <span>{{ todo.due_date|date:"M d, Y" }}</span>
-                    </p>
-                    {% endif %}
-                    <p class="mt-1 text-sm text-gray-500">
-                        <span class="font-bold">{% trans "Criado em:" %} </span>
-                        <span>{{ todo.created_at|date:"M d, Y" }}</span>
-                    </p>
-                </div>
-            </div>
-            
-            <div class="absolute bottom-4 right-4 flex space-x-2">
-                <button type="button" onclick="openTodoModal('{% url 'edit_todo' todo.pk %}', '{% trans 'Atualizar Afazer' %}')" class="text-gray-600 hover:text-gray-800 transition focus:outline-none cursor-pointer">
-                    <span class="material-icons">edit</span>
-                </button>
-                <button type="button" onclick="openTodoModal('{% url 'delete_todo' todo.pk %}', '{% trans 'Remover Afazer' %}')" class="text-gray-600 hover:text-gray-800 transition focus:outline-none cursor-pointer">
-                    <span class="material-icons">delete</span>
-                </button>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
+<div id="todo-list-container">
+    {% include 'todos/todo_list_partial.html' %}
 </div>
-
-{% if todos.has_other_pages %}
-<div class="flex justify-center mt-10 space-x-2">
-    {% if todos.has_previous %}
-        <a href="?page={{ todos.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% for s in status_filters %}&status={{ s }}{% endfor %}{% for p in priority_filters %}&priority={{ p }}{% endfor %}" class="px-4 py-2 bg-white text-violet-800 rounded-md shadow-sm hover:bg-violet-50">&lsaquo;</a>
-    {% endif %}
-
-    <span class="px-4 py-2 bg-violet-500 text-white rounded-md shadow-sm">
-        {{ todos.number }} {% trans "de" %} {{ todos.paginator.num_pages }}
-    </span>
-
-    {% if todos.has_next %}
-        <a href="?page={{ todos.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% for s in status_filters %}&status={{ s }}{% endfor %}{% for p in priority_filters %}&priority={{ p }}{% endfor %}" class="px-4 py-2 bg-white text-violet-800 rounded-md shadow-sm hover:bg-violet-50">&rsaquo;</a>
-    {% endif %}
-</div>
-{% endif %}
-
-{% else %}
-<div class="flex flex-col items-center justify-center mt-20 text-violet-800">
-    {% if query or status_filters or priority_filters %}
-        <span class="material-icons text-6xl mb-4 opacity-55">search_off</span>
-        <h2 class="text-2xl font-montserrat text-center">
-            {% trans "Nenhum afazer encontrado." %}
-        </h2>
-    {% else %}
-        <span class="material-icons text-6xl mb-4 opacity-55">inbox</span>
-        <h2 class="text-2xl font-montserrat text-center">
-            {% trans "Eita, você ainda não criou um afazer :(" %}
-        </h2>
-    {% endif %}
-</div>
-{% endif %}
 
 <!-- Modal for Create/Edit Todo -->
 <div id="todo-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50 hidden transition-opacity duration-300">
@@ -274,7 +188,7 @@
 </div>
 
 <!-- Profile Drawer Container (Overlay) -->
-<div id="profile-drawer" class="fixed inset-0 z-[100] flex justify-end bg-black bg-opacity-40 hidden transition-opacity">
+<div id="profile-drawer" class="fixed inset-0 z-[100] flex justify-end bg-black bg-opacity-40 {% if not show_profile %}hidden{% endif %} transition-opacity">
     <div class="bg-white shadow-2xl w-full sm:w-96 h-full p-6 relative flex flex-col animate-slide-in-right overflow-y-auto">
         <button type="button" onclick="toggleProfileDrawer()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer">
             <span class="material-icons">close</span>
@@ -297,15 +211,15 @@
             </div>
             <div class="flex justify-between border-b border-gray-100 pb-2">
                 <span class="text-violet-600 font-medium">{% trans "Total de Afazeres criados:" %}</span>
-                <span class="text-gray-800">{{ total_created }}</span>
+                <span class="text-gray-800" id="profile-total-created">{{ total_created }}</span>
             </div>
             <div class="flex justify-between border-b border-gray-100 pb-2">
                 <span class="text-violet-600 font-medium">{% trans "Total de Afazeres completos:" %}</span>
-                <span class="text-gray-800">{{ total_done }}</span>
+                <span class="text-gray-800" id="profile-total-done">{{ total_done }}</span>
             </div>
             <div class="flex justify-between border-b border-gray-100 pb-2">
                 <span class="text-violet-600 font-medium">{% trans "Total de Afazeres pendentes:" %}</span>
-                <span class="text-gray-800">{{ total_pending }}</span>
+                <span class="text-gray-800" id="profile-total-pending">{{ total_pending }}</span>
             </div>
             <div class="flex justify-between border-b border-gray-100 pb-2">
                 <span class="text-violet-600 font-medium">{% trans "Membro desde:" %}</span>
@@ -322,6 +236,27 @@
             </a>
         </div>
         {% endif %}
+
+        <!-- Language Selector -->
+        <div class="flex justify-between items-center mb-6 pt-4 border-t border-gray-100">
+            <span class="text-violet-600 font-medium text-sm">{% trans "Idioma:" %}</span>
+            <div class="flex gap-1.5">
+                {% get_current_language as LANGUAGE_CODE %}
+                {% get_available_languages as LANGUAGES %}
+                {% for lang_code, lang_name in LANGUAGES %}
+                <form hx-post="{% url 'set_language' %}" hx-target="body" hx-swap="outerHTML" class="inline m-0 p-0">
+                    {% csrf_token %}
+                    <input name="next" type="hidden" value="{{ request.path }}?profile=1">
+                    <input name="language" type="hidden" value="{{ lang_code }}">
+                    <button type="submit"
+                        class="px-2.5 py-1 rounded text-xs font-bold tracking-wider border transition-colors cursor-pointer
+                               {% if lang_code == LANGUAGE_CODE %}bg-violet-600 text-white border-violet-600{% else %}bg-white text-violet-600 border-violet-300 hover:bg-violet-50{% endif %}">
+                        {% if lang_code == 'pt-br' %}PT-BR{% else %}{{ lang_code|upper }}{% endif %}
+                    </button>
+                </form>
+                {% endfor %}
+            </div>
+        </div>
         
         <!-- Bottom Controls (Logout Button Only) -->
         <div class="mt-auto pt-6 border-t border-gray-100">

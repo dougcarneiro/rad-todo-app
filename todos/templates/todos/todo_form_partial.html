@@ -1,17 +1,58 @@
 {% load i18n %}
 <form method="POST" action="{% if todo %}{% url 'edit_todo' todo.pk %}{% else %}{% url 'create_todo' %}{% endif %}" class="space-y-4">
     {% csrf_token %}
-    {% for field in form %}
+    
+    <!-- Title Field -->
     <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1 text-left" for="{{ field.id_for_label }}">
-            {{ field.label }}{% if field.field.required %}<span class="ml-0.5 text-red-600" aria-hidden="true">*</span>{% endif %}
+        <label class="block text-sm font-medium text-gray-700 mb-1 text-left" for="{{ form.title.id_for_label }}">
+            {{ form.title.label }}{% if form.title.field.required %}<span class="ml-0.5 text-red-600" aria-hidden="true">*</span>{% endif %}
         </label>
-        {{ field }}
-        {% if field.errors %}
-        <p class="mt-1 text-xs text-red-600">{{ field.errors.0 }}</p>
+        {{ form.title }}
+        {% if form.title.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.title.errors.0 }}</p>
         {% endif %}
     </div>
-    {% endfor %}
+
+    <!-- Description Field -->
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1 text-left" for="{{ form.description.id_for_label }}">
+            {{ form.description.label }}{% if form.description.field.required %}<span class="ml-0.5 text-red-600" aria-hidden="true">*</span>{% endif %}
+        </label>
+        {{ form.description }}
+        {% if form.description.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.description.errors.0 }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Priority Field -->
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1 text-left" for="{{ form.priority.id_for_label }}">
+            {{ form.priority.label }}{% if form.priority.field.required %}<span class="ml-0.5 text-red-600" aria-hidden="true">*</span>{% endif %}
+        </label>
+        {{ form.priority }}
+        {% if form.priority.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.priority.errors.0 }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Due Date Field with Clear Button -->
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1 text-left" for="{{ form.due_date.id_for_label }}">
+            {{ form.due_date.label }}{% if form.due_date.field.required %}<span class="ml-0.5 text-red-600" aria-hidden="true">*</span>{% endif %}
+        </label>
+        <div class="flex items-center gap-2">
+            <div class="relative flex-grow">
+                {{ form.due_date }}
+            </div>
+            <!-- Clear Date Button -->
+            <button type="button" id="clear-date-btn" class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 rounded-md transition focus:outline-none hidden flex-shrink-0" title="{% trans 'Limpar data' %}">
+                <span class="material-icons text-lg leading-none">close</span>
+            </button>
+        </div>
+        {% if form.due_date.errors %}
+        <p class="mt-1 text-xs text-red-600">{{ form.due_date.errors.0 }}</p>
+        {% endif %}
+    </div>
     
     <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
         <button type="button" onclick="closeTodoModal()" class="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-md transition font-medium">

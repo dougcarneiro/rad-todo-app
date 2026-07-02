@@ -33,13 +33,14 @@
         }
       }
     </script>
+    <script src="https://unpkg.com/htmx.org@2.0.1"></script>
     <style>
       body { background-color: #ddd6fe; } /* violet-200 */
       .font-satisfy { font-family: 'Satisfy', cursive; }
       .font-montserrat { font-family: 'Montserrat', sans-serif; }
     </style>
 </head>
-<body class="font-montserrat text-gray-800 min-h-screen">
+<body class="font-montserrat text-gray-800 min-h-screen" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 
 
 
